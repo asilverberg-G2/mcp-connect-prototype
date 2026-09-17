@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G2 × AI — Connect Module Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; color: #111827; }
+
+/* ─── PROTO TAB BAR ─── */
+.proto-tabbar { position: sticky; top: 0; z-index: 500; background: #1e1b4b; display: flex; align-items: center; gap: 2px; padding: 0 16px; height: 40px; border-bottom: 1px solid #312e81; }
+.proto-label { font-size: 11px; color: #a5b4fc; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; margin-right: 10px; white-space: nowrap; }
+.proto-tab { padding: 0 14px; height: 100%; display: flex; align-items: center; cursor: pointer; font-size: 12px; font-weight: 500; color: #a5b4fc; border-radius: 4px 4px 0 0; white-space: nowrap; transition: background .15s, color .15s; }
+.proto-tab:hover { background: rgba(255,255,255,.08); color: #fff; }
+.proto-tab.active { background: #fff; color: #1e1b4b; font-weight: 700; }
+.page-shell { display: none; }
+.page-shell.active { display: block; }
+
+/* ─── G2 NAV ─── */
+.g2-nav { background: #fff; border-bottom: 1px solid #e5e7eb; height: 60px; display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 40px; z-index: 400; }
+.g2-logo-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; text-decoration: none; }
+.g2-logo-icon { width: 36px; height: 36px; border-radius: 50%; background: #ff492c; display: flex; align-items: center; justify-content: center; }
+.g2-logo-text { font-size: 22px; font-weight: 800; color: #ff492c; letter-spacing: -.5px; }
+.g2-search { flex: 1; max-width: 420px; margin: 0 16px; }
+.g2-search-inner { display: flex; align-items: center; background: #f3f4f6; border-radius: 24px; padding: 8px 16px; gap: 8px; }
+.g2-search-inner input { border: none; background: transparent; font-size: 14px; font-family: inherit; outline: none; width: 100%; color: #374151; }
+.g2-nav-links { display: flex; gap: 4px; }
+.g2-nav-link { padding: 6px 12px; font-size: 14px; font-weight: 500; color: #374151; cursor: default; border-radius: 6px; display: flex; align-items: center; gap: 4px; }
+.g2-nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.g2-notif { width: 34px; height: 34px; border-radius: 8px; background: #ede9fe; display: flex; align-items: center; justify-content: center; }
+.g2-btn-review { background: #4b3fcb; color: #fff; border: none; border-radius: 24px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: default; font-family: inherit; }
+.g2-btn-login { font-size: 13px; color: #374151; font-weight: 500; cursor: default; }
+
+/* Sub nav */
+.g2-subnav { background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; padding: 0 24px; height: 44px; gap: 0; }
+.g2-subnav-tab { padding: 0 16px; height: 100%; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; cursor: default; white-space: nowrap; }
+.g2-subnav-tab.active { color: #111827; font-weight: 700; border-bottom-color: #111827; }
+
+/* ─── G2 MODULE ─── */
+/* Outer wrapper sets the gray background that shows around the white card */
+.g2-module-wrap { background: #ebebf0; border-radius: 14px; padding: 4px; margin-bottom: 16px; }
+.g2-module-wrap.no-margin { margin-bottom: 0; }
+.g2-module { background: #fff; border-radius: 11px; box-shadow: 0 1px 4px rgba(0,0,0,.06); padding: 22px 26px; display: flex; align-items: center; gap: 32px; }
+.g2-module-text { flex: 1; min-width: 0; }
+.g2-module-headline { font-size: 21px; font-weight: 800; line-height: 1.25; margin-bottom: 6px; color: #111827; }
+.g2-module-body { font-size: 14px; color: #374151; line-height: 1.55; margin-bottom: 14px; }
+.g2-tip-wrap { position: relative; display: inline-block; }
+.g2-tip-trigger { display: inline-flex; align-items: center; gap: 5px; color: #9ca3af; font-size: 13px; cursor: default; user-select: none; }
+.g2-tooltip { position: absolute; bottom: calc(100% + 10px); left: 0; background: #1f2937; color: #fff; font-size: 12px; line-height: 1.55; padding: 10px 13px; border-radius: 8px; max-width: 226px; white-space: normal; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+.g2-tooltip::after { content: ''; position: absolute; top: 100%; left: 14px; border: 6px solid transparent; border-top-color: #1f2937; }
+.g2-tip-wrap:hover .g2-tooltip { opacity: 1; }
+.g2-module-btns { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.g2-connect-btn { display: inline-flex; align-items: center; justify-content: center; padding: 11px 22px; border: 1.5px solid #4b3fcb; border-radius: 9999px; background: #fff; color: #4b3fcb; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; font-family: inherit; white-space: nowrap; }
+.g2-connect-btn:hover { background: #4b3fcb; color: #fff; }
+
+/* Compact module (in-chat) — same outer gray wrap, smaller internals */
+.g2-module-compact-wrap { background: #ebebf0; border-radius: 12px; padding: 4px; margin-top: 12px; max-width: 520px; }
+.g2-module-compact { background: #fff; border-radius: 9px; padding: 16px 18px; display: flex; align-items: center; gap: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.g2-compact-text { flex: 1; }
+.g2-compact-headline { font-size: 15px; font-weight: 800; color: #111827; line-height: 1.25; margin-bottom: 5px; }
+.g2-compact-body { font-size: 13px; color: #374151; line-height: 1.5; margin-bottom: 10px; }
+.g2-compact-btns { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.g2-connect-btn-sm { padding: 8px 16px; border: 1.5px solid #4b3fcb; border-radius: 9999px; background: #fff; color: #4b3fcb; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; font-family: inherit; white-space: nowrap; }
+.g2-connect-btn-sm:hover { background: #4b3fcb; color: #fff; }
+
+/* Compare sidebar module — vertical stacked layout */
+.g2-module-sidebar-wrap { background: #ebebf0; border-radius: 14px; padding: 4px; margin-bottom: 16px; }
+.g2-module-sidebar { background: #fff; border-radius: 11px; padding: 18px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.g2-module-sidebar .g2-module-headline { font-size: 16px; font-weight: 800; line-height: 1.25; margin-bottom: 6px; color: #111827; }
+.g2-module-sidebar .g2-module-body { font-size: 13px; color: #374151; line-height: 1.55; margin-bottom: 12px; }
+.g2-module-sidebar .g2-module-btns { flex-direction: column; gap: 8px; }
+.g2-module-sidebar .g2-connect-btn { width: 100%; padding: 10px 14px; font-size: 13px; justify-content: center; }
+
+/* ─── SHARED ─── */
+.page-bg-gray { background: #f3f4f6; min-height: calc(100vh - 104px); }
+.page-bg-lavender { background: #ede9fe; min-height: calc(100vh - 104px); }
+.page-bg-white { background: #fff; min-height: calc(100vh - 104px); }
+.crumb { font-size: 12px; color: #9ca3af; margin-bottom: 14px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.crumb a { color: #9ca3af; text-decoration: none; }
+.crumb a:hover { color: #4b3fcb; }
+.stars { color: #f59e0b; }
+.tag-pro { background: #d1fae5; color: #065f46; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+.tag-con { background: #fee2e2; color: #991b1b; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+.btn-purple { background: #4b3fcb; color: #fff; border: none; border-radius: 24px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: default; font-family: inherit; }
+.btn-outline-purple { background: #fff; color: #4b3fcb; border: 1.5px solid #4b3fcb; border-radius: 24px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: default; font-family: inherit; }
+
+/* ════════════════════
+   CATEGORY PAGE
+   ════════════════════ */
+.cat-layout { display: flex; gap: 20px; padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+.cat-sidebar { width: 268px; flex-shrink: 0; }
+.cat-sidebar-card { background: #fff; border-radius: 10px; border: 1px solid #e5e7eb; padding: 16px; margin-bottom: 12px; }
+.cat-sidebar-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; margin-bottom: 10px; }
+.seg-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: default; border: 1px solid #e5e7eb; color: #374151; }
+.seg-pill.active { background: #111827; color: #fff; border-color: #111827; }
+.filter-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; color: #374151; }
+.filter-row input[type=checkbox] { accent-color: #4b3fcb; width: 14px; height: 14px; }
+.cat-main { flex: 1; min-width: 0; }
+.sort-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 14px; font-size: 13px; color: #6b7280; }
+.sort-select { padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; color: #374151; background: #fff; font-family: inherit; cursor: default; }
+
+/* Product card (category style) */
+.pcard { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 22px; margin-bottom: 12px; display: flex; gap: 16px; }
+.pcard-logo { width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #fff; }
+.pcard-body { flex: 1; min-width: 0; }
+.pcard-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.pcard-name { font-size: 16px; font-weight: 700; color: #111827; }
+.pcard-rating { font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.pcard-rating .stars { font-size: 13px; }
+.pcard-desc { font-size: 13px; color: #374151; line-height: 1.55; margin-bottom: 10px; }
+.pcard-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.pcard-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+.pcard-badge { font-size: 10.5px; background: #ede9fe; color: #4b3fcb; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+
+/* ════════════════════
+   ALTERNATIVES PAGE
+   ════════════════════ */
+.alt-page { max-width: 960px; margin: 0 auto; padding: 24px 24px 40px; }
+.alt-hero-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 24px; display: flex; gap: 24px; }
+.alt-hero-logo { width: 80px; height: 80px; border-radius: 14px; flex-shrink: 0; background: #ff492c; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; }
+.alt-hero-body { flex: 1; }
+.alt-hero-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.alt-hero-rating { font-size: 13px; color: #6b7280; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.alt-hero-desc { font-size: 13px; color: #374151; line-height: 1.55; }
+.alt-expert-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; width: 220px; flex-shrink: 0; text-align: center; }
+.alt-expert-card p { font-size: 13px; color: #374151; line-height: 1.5; margin-bottom: 12px; }
+.alt-list { display: flex; flex-direction: column; gap: 12px; }
+.alt-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; }
+.alt-logo { width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+.alt-info { flex: 1; }
+.alt-name { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.alt-rating { font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 5px; }
+.sponsored { font-size: 10px; background: #f3f4f6; color: #9ca3af; padding: 2px 6px; border-radius: 3px; font-weight: 500; margin-left: 6px; }
+.compare-bar-fixed { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e5e7eb; padding: 10px 24px; display: flex; align-items: center; gap: 16px; z-index: 300; box-shadow: 0 -2px 8px rgba(0,0,0,.08); }
+.compare-slots { display: flex; gap: 8px; }
+.compare-slot { width: 44px; height: 44px; border: 2px dashed #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; background: #fff; }
+.compare-slot.filled { background: #ff492c; border: none; }
+
+/* ════════════════════
+   DEALS PAGE
+   ════════════════════ */
+.deals-hero { background: #fff; padding: 32px 24px 28px; border-bottom: 1px solid #e5e7eb; }
+.deals-hero-inner { max-width: 1160px; margin: 0 auto; }
+.deals-h1 { font-size: 38px; font-weight: 800; color: #111827; line-height: 1.2; margin-bottom: 6px; }
+.deals-h1 span { color: #ff492c; }
+.deals-sub { font-size: 16px; color: #6b7280; margin-bottom: 20px; }
+.deals-subscribe { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; gap: 14px; }
+.deals-subscribe p { font-size: 13px; color: #374151; flex: 1; }
+.deals-body { max-width: 1160px; margin: 0 auto; padding: 24px 24px 60px; display: flex; gap: 22px; }
+.deals-sidebar { width: 220px; flex-shrink: 0; }
+.deals-sidebar-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
+.deals-cat-link { display: block; padding: 7px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #4b3fcb; cursor: default; margin-bottom: 2px; text-decoration: none; }
+.deals-cat-link.active { background: #ede9fe; }
+.deals-main { flex: 1; }
+.deals-search-row { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
+.deals-search { flex: 1; display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; }
+.deals-search input { border: none; outline: none; font-size: 13px; font-family: inherit; flex: 1; }
+.deals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.deal-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+.deal-card-img { height: 130px; display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; }
+.deal-expand { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,.3); color: #fff; width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.deal-card-body { padding: 14px 14px 16px; }
+.deal-card-header { display: flex; align-items: center; gap: 9px; margin-bottom: 5px; }
+.deal-logo-sm { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; color: #fff; flex-shrink: 0; }
+.deal-name { font-weight: 700; font-size: 14px; }
+.deal-rating { font-size: 11px; color: #6b7280; display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.deal-offer { font-size: 13px; color: #ff492c; font-weight: 600; }
+
+/* ════════════════════
+   COMPARE PAGE
+   ════════════════════ */
+.compare-page-inner { max-width: 1080px; margin: 0 auto; padding: 24px 24px 60px; }
+.compare-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-top: 0; }
+.compare-tbl { width: 100%; border-collapse: collapse; }
+.compare-tbl th { background: #fff; padding: 20px 22px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 13px; font-weight: 400; color: #9ca3af; vertical-align: top; }
+.compare-tbl th:first-child { width: 180px; font-size: 12px; color: #6b7280; padding-top: 28px; }
+.compare-tbl td { padding: 16px 22px; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }
+.compare-tbl tr:last-child td { border-bottom: none; }
+.compare-tbl td:first-child { font-size: 13px; color: #6b7280; font-weight: 500; }
+.compare-prod-header { display: flex; flex-direction: column; gap: 6px; }
+.compare-prod-logo { width: 52px; height: 52px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: #fff; margin-bottom: 4px; }
+.compare-prod-name { font-size: 17px; font-weight: 700; color: #111827; }
+.compare-prod-by { font-size: 12px; color: #6b7280; }
+.compare-prod-by a { color: #4b3fcb; }
+.price-badge { display: inline-block; border: 1px solid #d1d5db; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #6b7280; margin-bottom: 5px; }
+.advisory-card { background: #ede9fe; border-radius: 10px; padding: 18px 22px; margin-top: 20px; display: flex; align-items: center; gap: 16px; }
+.advisory-card p { font-size: 13px; color: #374151; flex: 1; }
+.add-product-col { padding: 20px 16px; vertical-align: top; }
+.add-product-btn { display: flex; align-items: center; gap: 6px; color: #4b3fcb; font-size: 13px; font-weight: 600; cursor: default; }
+
+/* ════════════════════
+   IN-CHAT PAGE
+   ════════════════════ */
+.chat-page { background: #f3f4f6; padding: 24px; display: flex; justify-content: center; min-height: calc(100vh - 104px); }
+.chat-product-bar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; }
+.chat-product-info { display: flex; align-items: center; gap: 12px; }
+.chat-product-logo { width: 44px; height: 44px; border-radius: 8px; background: #ff492c; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 14px; }
+.chat-product-name { font-size: 15px; font-weight: 700; }
+.chat-product-rating { font-size: 12px; color: #f59e0b; }
+.chat-left-nav { width: 200px; flex-shrink: 0; }
+.chat-left-nav-item { display: block; padding: 10px 14px; font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb; cursor: default; }
+.chat-left-nav-item.active { color: #4b3fcb; border-left: 3px solid #4b3fcb; background: #f9f8ff; font-weight: 600; }
+.chat-window-outer { width: 100%; max-width: 680px; }
+.chat-window { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.1); display: flex; flex-direction: column; height: 520px; }
+.chat-win-header { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; }
+.chat-win-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.chat-win-logo { width: 28px; height: 28px; border-radius: 50%; background: #ff492c; display: flex; align-items: center; justify-content: center; }
+.chat-win-controls { display: flex; gap: 10px; color: #9ca3af; font-size: 16px; cursor: default; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.chat-msg-ai { display: flex; align-items: flex-start; gap: 10px; }
+.chat-avatar { width: 30px; height: 30px; border-radius: 50%; background: #ff492c; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.chat-bubble-ai { background: #f9f8ff; border-radius: 12px; border-top-left-radius: 2px; padding: 12px 14px; font-size: 13.5px; line-height: 1.55; color: #374151; max-width: 520px; }
+.chat-msg-user { display: flex; justify-content: flex-end; }
+.chat-bubble-user { background: #4b3fcb; color: #fff; border-radius: 12px; border-bottom-right-radius: 2px; padding: 10px 14px; font-size: 13.5px; max-width: 400px; line-height: 1.5; }
+.chat-input-area { padding: 12px 14px; border-top: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
+.chat-input { flex: 1; border: 1px solid #e5e7eb; border-radius: 24px; padding: 9px 16px; font-size: 13px; font-family: inherit; outline: none; }
+.chat-input:focus { border-color: #4b3fcb; }
+.chat-input-btns { display: flex; gap: 8px; }
+.chat-mic-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e5e7eb; background: #fff; display: flex; align-items: center; justify-content: center; cursor: default; }
+.chat-send-btn { width: 34px; height: 34px; border-radius: 50%; background: #4b3fcb; border: none; display: flex; align-items: center; justify-content: center; cursor: default; }
+
+/* ════════════════════
+   OVERLAYS
+   ════════════════════ */
+.overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.overlay-backdrop.open { opacity: 1; pointer-events: all; }
+.overlay-win { width: 900px; max-width: 95vw; height: 660px; border-radius: 10px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.3); transform: translateY(20px) scale(.96); transition: transform .3s ease-out; display: flex; flex-direction: column; background: #fff; position: relative; }
+.overlay-backdrop.open .overlay-win { transform: translateY(0) scale(1); }
+.overlay-x { position: absolute; top: 10px; right: 12px; z-index: 20; background: rgba(0,0,0,.35); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.overlay-x:hover { background: rgba(0,0,0,.6); }
+
+/* Browser chrome */
+.br-chrome { background: #e2e2e2; padding: 9px 10px 0; flex-shrink: 0; }
+.br-lights { display: flex; gap: 5px; margin-bottom: 7px; }
+.br-dot { width: 12px; height: 12px; border-radius: 50%; }
+.br-red { background: #ff5f57; } .br-yellow { background: #febc2e; } .br-green { background: #28c840; }
+.br-tabs { display: flex; }
+.br-tab { background: #fff; border-radius: 7px 7px 0 0; padding: 5px 14px; font-size: 12px; color: #333; display: flex; align-items: center; gap: 6px; max-width: 200px; }
+.br-addr { background: #e2e2e2; padding: 5px 10px 9px; }
+.br-url { background: #fff; border-radius: 6px; padding: 5px 12px; font-size: 12px; color: #555; font-family: monospace; }
+.br-content { flex: 1; overflow: hidden; display: flex; }
+
+/* Desktop (Claude) chrome */
+.dt-chrome { background: #d8d8d8; flex-shrink: 0; }
+.dt-titlebar { display: flex; align-items: center; padding: 8px 12px; height: 36px; }
+.dt-lights { display: flex; gap: 6px; }
+.dt-title { flex: 1; text-align: center; font-size: 13px; font-weight: 500; color: #333; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.dt-spacer { width: 52px; }
+
+/* Step management */
+.ovl-step { display: none; flex: 1; width: 100%; }
+.ovl-step.active { display: flex; }
+
+/* ─ ChatGPT sidebar ─ */
+.gpt-sb { width: 230px; background: #f9f9f9; border-right: 1px solid #eee; padding: 12px 10px; flex-shrink: 0; overflow-y: auto; }
+.gpt-sb-logo { font-weight: 700; font-size: 15px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.gpt-sb-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; font-size: 13px; color: #333; margin-bottom: 2px; cursor: default; }
+.gpt-sb-item.active { background: #ebebeb; font-weight: 600; }
+.gpt-sb-label { font-size: 10.5px; color: #999; font-weight: 700; padding: 10px 8px 3px; text-transform: uppercase; letter-spacing: .05em; }
+.gpt-sb-recent { font-size: 12px; color: #555; padding: 4px 8px; cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+.gpt-sb-user { margin-top: auto; padding-top: 10px; border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+.gpt-avatar { width: 28px; height: 28px; border-radius: 50%; background: #4b3fcb; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.gpt-upgrade-pill { font-size: 11px; border: 1px solid #ddd; border-radius: 14px; padding: 3px 9px; color: #333; }
+.gpt-main { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+/* Plugin listing */
+.plug-search { display: flex; align-items: center; gap: 8px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; max-width: 300px; margin-bottom: 20px; }
+.plug-search input { border: none; outline: none; font-size: 14px; font-family: inherit; flex: 1; }
+.plug-section-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.plug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.plug-card { border: 1px solid #eee; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 10px; }
+.plug-icon { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.plug-name { font-weight: 600; font-size: 13.5px; }
+.plug-desc { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+.plug-add { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #e5e7eb; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: #333; flex-shrink: 0; transition: background .15s; }
+.plug-add:hover { background: #f0f0f0; }
+
+/* Detail page */
+.det-back { font-size: 13px; color: #4b3fcb; margin-bottom: 18px; display: inline-flex; align-items: center; gap: 4px; cursor: default; }
+.det-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.det-logo { width: 56px; height: 56px; border-radius: 12px; margin-bottom: 8px; }
+.det-title { font-size: 22px; font-weight: 700; }
+.det-subtitle { font-size: 13px; color: #9ca3af; }
+.det-install-btn { background: #111; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.det-install-btn:hover { background: #333; }
+.det-preview { background: linear-gradient(135deg,#b8d4f0,#d4e8ff 60%,#f0e87a); border-radius: 10px; height: 175px; margin-bottom: 18px; display: flex; align-items: center; justify-content: center; }
+.det-preview-card { background: #fff; border-radius: 8px; padding: 12px 16px; box-shadow: 0 2px 12px rgba(0,0,0,.12); width: 260px; }
+.det-desc { font-size: 13px; color: #444; line-height: 1.65; margin-bottom: 18px; }
+.det-section-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.det-info-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.det-info-row:last-child { border-bottom: none; }
+.det-info-label { color: #9ca3af; width: 140px; flex-shrink: 0; }
+.toast-green { background: #166534; color: #fff; padding: 7px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+
+/* Auth modal */
+.auth-overlay { position: absolute; inset: 0; background: rgba(255,255,255,.65); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 30; }
+.auth-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; width: 370px; box-shadow: 0 8px 32px rgba(0,0,0,.14); overflow: hidden; }
+.auth-hdr { padding: 11px 16px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; }
+.auth-body { padding: 22px 22px 18px; text-align: center; }
+.auth-big-logo { width: 62px; height: 62px; border-radius: 50%; margin: 0 auto 12px; }
+.auth-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.auth-as { font-size: 13px; color: #555; margin-bottom: 12px; }
+.auth-perms { font-size: 12px; color: #555; line-height: 1.6; text-align: left; margin-bottom: 14px; }
+.auth-perms a { color: #4b3fcb; }
+.auth-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.auth-cancel-btn { color: #4b3fcb; font-size: 13px; background: none; border: none; cursor: pointer; font-family: inherit; }
+.auth-signup-btn { background: #3d3580; color: #fff; border: none; border-radius: 22px; padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.auth-signup-btn:hover { background: #4b3fcb; }
+.auth-privacy { font-size: 12px; } .auth-privacy a { color: #4b3fcb; }
+
+/* Claude */
+.cl-sb { width: 210px; background: #fafafa; border-right: 1px solid #eee; padding: 14px 12px; flex-shrink: 0; }
+.cl-sb-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; margin-bottom: 16px; }
+.cl-new-chat { width: 100%; padding: 8px 12px; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; font-family: inherit; cursor: default; text-align: left; margin-bottom: 14px; }
+.cl-section-label { font-size: 10.5px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.cl-recent { font-size: 12px; color: #666; padding: 4px 6px; margin-bottom: 2px; }
+.cl-main { flex: 1; padding: 26px 30px; overflow-y: auto; position: relative; }
+.cl-settings-tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 22px; }
+.cl-stab { padding: 9px 14px; font-size: 13px; color: #6b7280; cursor: default; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.cl-stab.active { color: #4b3fcb; border-bottom-color: #4b3fcb; font-weight: 600; }
+.cl-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.cl-sub { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
+.cl-add-btn { padding: 9px 16px; border: 1.5px solid #4b3fcb; border-radius: 8px; background: #fff; color: #4b3fcb; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.cl-add-btn:hover { background: #4b3fcb; color: #fff; }
+.cl-empty { margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px; text-align: center; color: #9ca3af; font-size: 13px; }
+.cl-connector-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 14px; }
+.badge-connected { font-size: 11px; background: #dcfce7; color: #15803d; padding: 3px 9px; border-radius: 4px; font-weight: 600; }
+.cl-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; z-index: 20; }
+.cl-modal { background: #fff; border-radius: 12px; width: 370px; padding: 26px; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
+.cl-modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.cl-label { font-size: 12.5px; font-weight: 600; color: #6b7280; display: block; margin-bottom: 6px; }
+.cl-input { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: inherit; margin-bottom: 14px; outline: none; }
+.cl-input:focus { border-color: #4b3fcb; }
+.cl-modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 4px; }
+.cl-cancel { color: #6b7280; background: none; border: none; font-size: 14px; cursor: pointer; font-family: inherit; }
+.cl-submit { background: #4b3fcb; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.cl-submit:hover { background: #3d3580; }
+.cl-note { font-size: 11px; color: #9ca3af; font-style: italic; margin-top: 8px; }
+.cl-toast { position: absolute; top: 14px; right: 14px; background: #166534; color: #fff; padding: 7px 13px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- PROTO TAB BAR -->
+<div class="proto-tabbar">
+  <span class="proto-label">View:</span>
+  <div class="proto-tab active" data-tab="category">Category page</div>
+  <div class="proto-tab" data-tab="category2">Category page (rail)</div>
+  <div class="proto-tab" data-tab="alternatives">Alternatives page</div>
+  <div class="proto-tab" data-tab="deals">Deals page</div>
+  <div class="proto-tab" data-tab="compare">Compare page</div>
+  <div class="proto-tab" data-tab="inchat">In-chat</div>
+</div>
+
+<!-- SVG DEFS (reusable icons) -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ico-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="ico-chevron" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="ico-bell" viewBox="0 0 16 16"><path d="M8 1a5 5 0 015 5v3l1 2H2l1-2V6a5 5 0 015-5z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M6 13a2 2 0 004 0" stroke="currentColor" stroke-width="1.3" fill="none"/></symbol>
+  <symbol id="ico-info" viewBox="0 0 15 15"><circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="1.2" fill="none"/><text x="7.5" y="11" text-anchor="middle" fill="currentColor" font-size="8.5" font-family="Arial" font-weight="700">i</text></symbol>
+  <symbol id="ico-send" viewBox="0 0 16 16"><path d="M2 8L14 2l-4 12-2-5-5-3z" fill="currentColor"/></symbol>
+  <symbol id="ico-mic" viewBox="0 0 16 16"><rect x="5" y="1" width="6" height="9" rx="3" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M2 8a6 6 0 0012 0M8 14v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="ico-g2-chat" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 7.5C5 6 6.3 5 8 5s3 1 3 2.5c0 1.2-.8 2.2-2 2.7L8 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><circle cx="8" cy="13" r=".8" fill="currentColor"/></symbol>
+</svg>
+
+<!-- SHARED G2 NAV (reused via JS cloning) is inline per page for simplicity -->
+
+<!-- ════════════════════════════════════
+     PAGE 1: CATEGORY
+     ════════════════════════════════════ -->
+<div class="page-shell active" id="shell-category">
+  <!-- NAV -->
+  <nav class="g2-nav">
+    <a class="g2-logo-wrap" href="#"><div class="g2-logo-icon"><svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="Arial">G2</text></svg></div><span class="g2-logo-text">G2</span></a>
+    <div class="g2-search"><div class="g2-search-inner"><svg width="14" height="14"><use href="#ico-search"/></svg><input type="text" placeholder="Ask a question…" readonly></div></div>
+    <div class="g2-nav-links">
+      <div class="g2-nav-link">Software <svg width="10" height="6" style="margin-top:1px"><use href="#ico-chevron"/></svg></div>
+      <div class="g2-nav-link">Agents <svg width="10" height="6" style="margin-top:1px"><use href="#ico-chevron"/></svg></div>
+    </div>
+    <div class="g2-nav-right">
+      <div class="g2-notif"><svg width="16" height="16" color="#4b3fcb"><use href="#ico-bell"/></svg></div>
+      <button class="g2-btn-review">Leave a Review</button>
+      <span class="g2-btn-login">Join or Log In</span>
+    </div>
+  </nav>
+  <div class="g2-subnav">
+    <div class="g2-subnav-tab active">Overview</div>
+    <div class="g2-subnav-tab">Highest Rated</div>
+    <div class="g2-subnav-tab">Easiest To Use</div>
+    <div class="g2-subnav-tab">Free</div>
+    <div class="g2-subnav-tab">Resources</div>
+  </div>
+  <div class="page-bg-gray">
+    <div class="cat-layout">
+      <!-- Sidebar -->
+      <div class="cat-sidebar">
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Segment</div>
+          <div class="seg-pills">
+            <div class="seg-pill active">All</div>
+            <div class="seg-pill">Small Business</div>
+            <div class="seg-pill">Enterprise</div>
+          </div>
+        </div>
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Rating</div>
+          <div class="filter-row"><input type="checkbox" checked readonly> <span class="stars">★★★★★</span> 5 stars</div>
+          <div class="filter-row"><input type="checkbox" checked readonly> <span class="stars">★★★★</span> 4+ stars</div>
+          <div class="filter-row"><input type="checkbox" readonly> <span class="stars">★★★</span> 3+ stars</div>
+        </div>
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Pricing</div>
+          <div class="filter-row"><input type="checkbox" readonly> Deals Available</div>
+          <div class="filter-row"><input type="checkbox" readonly> Free Trial</div>
+          <div class="filter-row"><input type="checkbox" readonly> Pricing Available</div>
+        </div>
+      </div>
+      <!-- Main -->
+      <div class="cat-main">
+        <div class="crumb"><a href="#">Home</a> › <a href="#">Conversational Intelligence</a> › Chatbots Software</div>
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:4px;">Best Chatbots Software</h1>
+        <p style="font-size:14px;color:#6b7280;margin-bottom:20px;">Based on 4,892 verified user reviews · Updated September 2026</p>
+        <div class="sort-bar">Sort By: <select class="sort-select"><option>G2 Score</option></select></div>
+        <!-- Card 1 -->
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#ff492c;">Qf</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Qualified</div><div class="pcard-rating"><span class="stars">★★★★★</span> 4.9/5 (1,557 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Qualified is a pipeline generation platform for B2B companies — live chat, AI agents, and intent signals to convert your best buyers in real time.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Ease of Use (412)</span><span class="tag-pro">👍 Customer Support (379)</span><span class="tag-con">👎 Setup Complexity (84)</span></div>
+          </div>
+        </div>
+        <!-- Card 2 -->
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#0052cc;">Df</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Drift</div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.4/5 (1,255 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Drift's conversational marketing platform turns anonymous website visitors into qualified pipeline through AI-powered chat and automated booking flows.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Chat Features (341)</span><span class="tag-pro">👍 Integrations (289)</span><span class="tag-con">👎 Learning Curve (92)</span></div>
+          </div>
+        </div>
+        <!-- Card 3 -->
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#7c3aed;">In</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Intercom <span class="sponsored">SPONSORED</span></div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.5/5 (3,182 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Intercom is a complete AI-first customer service platform with Fin AI Agent, help desk, proactive support, and engagement tools — all in one.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Messaging (512)</span><span class="tag-pro">👍 Automation (390)</span><span class="tag-con">👎 Pricing (143)</span></div>
+          </div>
+        </div>
+        <!-- MODULE — after card 3 -->
+        <div class="g2-module-wrap">
+          <div class="g2-module">
+            <div class="g2-module-text">
+              <div class="g2-module-headline">AI can help you find the answers.<br>G2 helps you trust them.</div>
+              <div class="g2-module-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+              <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="14" height="14" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip">The buttons to the right will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+            </div>
+            <div class="g2-module-btns">
+              <button class="g2-connect-btn" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+              <button class="g2-connect-btn" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 4 -->
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#0891b2;">Zd</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Zendesk</div><div class="pcard-rating"><span class="stars">★★★★</span> 4.3/5 (5,841 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Zendesk is a customer service platform built for enterprise scale — AI-powered ticketing, omnichannel support, and deep analytics in one workspace.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Ticketing (891)</span><span class="tag-pro">👍 Integrations (640)</span><span class="tag-con">👎 Pricing (224)</span></div>
+          </div>
+        </div>
+        <!-- Card 5 -->
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#059669;">Fn</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Fin by Intercom</div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.5/5 (891 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Fin is Intercom's AI agent — resolves customer questions instantly using your existing content, with human handoff when needed.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 AI Resolution Rate (341)</span><span class="tag-pro">👍 Setup Speed (199)</span><span class="tag-con">👎 Customization (61)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 1B: CATEGORY (RAIL VARIANT)
+     ════════════════════════════════════ -->
+<div class="page-shell" id="shell-category2">
+  <nav class="g2-nav">
+    <a class="g2-logo-wrap" href="#"><div class="g2-logo-icon"><svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="Arial">G2</text></svg></div><span class="g2-logo-text">G2</span></a>
+    <div class="g2-search"><div class="g2-search-inner"><svg width="14" height="14"><use href="#ico-search"/></svg><input type="text" placeholder="Ask a question…" readonly></div></div>
+    <div class="g2-nav-links"><div class="g2-nav-link">Software <svg width="10" height="6"><use href="#ico-chevron"/></svg></div><div class="g2-nav-link">Agents <svg width="10" height="6"><use href="#ico-chevron"/></svg></div></div>
+    <div class="g2-nav-right"><div class="g2-notif"><svg width="16" height="16" color="#4b3fcb"><use href="#ico-bell"/></svg></div><button class="g2-btn-review">Leave a Review</button><span class="g2-btn-login">Join or Log In</span></div>
+  </nav>
+  <div class="g2-subnav">
+    <div class="g2-subnav-tab active">Overview</div>
+    <div class="g2-subnav-tab">Highest Rated</div>
+    <div class="g2-subnav-tab">Easiest To Use</div>
+    <div class="g2-subnav-tab">Free</div>
+    <div class="g2-subnav-tab">Resources</div>
+  </div>
+  <div class="page-bg-gray">
+    <div class="cat-layout">
+      <!-- Sidebar — module at top, then filters -->
+      <div class="cat-sidebar">
+        <div class="g2-module-sidebar-wrap">
+          <div class="g2-module-sidebar">
+            <div class="g2-module-headline">AI can help you find the answers. G2 helps you trust them.</div>
+            <div class="g2-module-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+            <div class="g2-module-btns" style="margin-bottom:12px;">
+              <button class="g2-connect-btn" style="width:100%;padding:10px 14px;font-size:13px;justify-content:center;" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+              <button class="g2-connect-btn" style="width:100%;padding:10px 14px;font-size:13px;justify-content:center;" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+            </div>
+            <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="14" height="14" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip" style="left:0;right:auto;">The buttons above will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+          </div>
+        </div>
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Segment</div>
+          <div class="seg-pills">
+            <div class="seg-pill active">All</div>
+            <div class="seg-pill">Small Business</div>
+            <div class="seg-pill">Enterprise</div>
+          </div>
+        </div>
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Rating</div>
+          <div class="filter-row"><input type="checkbox" checked readonly> <span class="stars">★★★★★</span> 5 stars</div>
+          <div class="filter-row"><input type="checkbox" checked readonly> <span class="stars">★★★★</span> 4+ stars</div>
+          <div class="filter-row"><input type="checkbox" readonly> <span class="stars">★★★</span> 3+ stars</div>
+        </div>
+        <div class="cat-sidebar-card">
+          <div class="cat-sidebar-title">Pricing</div>
+          <div class="filter-row"><input type="checkbox" readonly> Deals Available</div>
+          <div class="filter-row"><input type="checkbox" readonly> Free Trial</div>
+          <div class="filter-row"><input type="checkbox" readonly> Pricing Available</div>
+        </div>
+      </div>
+      <!-- Main — no module in list -->
+      <div class="cat-main">
+        <div class="crumb"><a href="#">Home</a> › <a href="#">Conversational Intelligence</a> › Chatbots Software</div>
+        <h1 style="font-size:28px;font-weight:800;margin-bottom:4px;">Best Chatbots Software</h1>
+        <p style="font-size:14px;color:#6b7280;margin-bottom:20px;">Based on 4,892 verified user reviews · Updated September 2026</p>
+        <div class="sort-bar">Sort By: <select class="sort-select"><option>G2 Score</option></select></div>
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#ff492c;">Qf</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Qualified</div><div class="pcard-rating"><span class="stars">★★★★★</span> 4.9/5 (1,557 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Qualified is a pipeline generation platform for B2B companies — live chat, AI agents, and intent signals to convert your best buyers in real time.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Ease of Use (412)</span><span class="tag-pro">👍 Customer Support (379)</span><span class="tag-con">👎 Setup Complexity (84)</span></div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#0052cc;">Df</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Drift</div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.4/5 (1,255 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Drift's conversational marketing platform turns anonymous website visitors into qualified pipeline through AI-powered chat and automated booking flows.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Chat Features (341)</span><span class="tag-pro">👍 Integrations (289)</span><span class="tag-con">👎 Learning Curve (92)</span></div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#7c3aed;">In</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Intercom <span class="sponsored">SPONSORED</span></div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.5/5 (3,182 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Intercom is a complete AI-first customer service platform with Fin AI Agent, help desk, proactive support, and engagement tools — all in one.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Messaging (512)</span><span class="tag-pro">👍 Automation (390)</span><span class="tag-con">👎 Pricing (143)</span></div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#0891b2;">Zd</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Zendesk</div><div class="pcard-rating"><span class="stars">★★★★</span> 4.3/5 (5,841 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Zendesk is a customer service platform built for enterprise scale — AI-powered ticketing, omnichannel support, and deep analytics in one workspace.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 Ticketing (891)</span><span class="tag-pro">👍 Integrations (640)</span><span class="tag-con">👎 Pricing (224)</span></div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-logo" style="background:#059669;">Fn</div>
+          <div class="pcard-body">
+            <div class="pcard-header">
+              <div><div class="pcard-name">Fin by Intercom</div><div class="pcard-rating"><span class="stars">★★★★½</span> 4.5/5 (891 reviews)</div></div>
+              <div class="pcard-actions"><button class="btn-purple">Get a Quote</button><button class="btn-outline-purple">Compare</button></div>
+            </div>
+            <div class="pcard-desc">Fin is Intercom's AI agent — resolves customer questions instantly using your existing content, with human handoff when needed.</div>
+            <div class="pcard-tags"><span class="tag-pro">👍 AI Resolution Rate (341)</span><span class="tag-pro">👍 Setup Speed (199)</span><span class="tag-con">👎 Customization (61)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 2: ALTERNATIVES
+     ════════════════════════════════════ -->
+<div class="page-shell" id="shell-alternatives">
+  <nav class="g2-nav">
+    <a class="g2-logo-wrap" href="#"><div class="g2-logo-icon"><svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="Arial">G2</text></svg></div><span class="g2-logo-text">G2</span></a>
+    <div class="g2-search"><div class="g2-search-inner"><svg width="14" height="14"><use href="#ico-search"/></svg><input type="text" placeholder="Ask a question…" readonly></div></div>
+    <div class="g2-nav-links"><div class="g2-nav-link">Software <svg width="10" height="6"><use href="#ico-chevron"/></svg></div><div class="g2-nav-link">Agents <svg width="10" height="6"><use href="#ico-chevron"/></svg></div></div>
+    <div class="g2-nav-right"><div class="g2-notif"><svg width="16" height="16" color="#4b3fcb"><use href="#ico-bell"/></svg></div><button class="g2-btn-review">Leave a Review</button><span class="g2-btn-login">Join or Log In</span></div>
+  </nav>
+  <div class="page-bg-gray" style="padding-bottom: 56px;">
+    <div class="alt-page">
+      <div class="crumb"><a href="#">Home</a> › <a href="#">Conversational Marketing</a> › <a href="#">Qualified</a> › Alternatives</div>
+      <!-- Hero card -->
+      <div style="display:flex;gap:16px;margin-bottom:24px;">
+        <div class="alt-hero-card" style="flex:1;">
+          <div class="alt-hero-logo">G2</div>
+          <div class="alt-hero-body">
+            <div class="alt-hero-name">Top 10 Qualified Alternatives &amp; Competitors</div>
+            <div class="alt-hero-rating"><span class="stars">★★★★★</span> 4.9/5 · 1,557 reviews</div>
+            <div class="alt-hero-desc">Browse the best alternatives to Qualified, compared side-by-side using verified G2 reviews, feature ratings, and pricing from real users. <span style="color:#4b3fcb;cursor:default;">Show More</span></div>
+          </div>
+        </div>
+        <div class="alt-expert-card">
+          <p style="font-size:12.5px;color:#374151;line-height:1.5;">G2 offers free advice on software to match your needs.</p>
+          <button class="btn-purple" style="width:100%;font-size:12px;padding:9px 0;">Chat with an expert</button>
+        </div>
+      </div>
+      <div class="alt-list">
+        <div class="alt-card"><div class="alt-logo" style="background:#0052cc;">Df</div><div class="alt-info"><div class="alt-name">Drift <span class="sponsored">SPONSORED</span></div><div class="alt-rating"><span class="stars">★★★★½</span> 4.4/5 · 1,255 reviews</div></div><div><button class="btn-purple" style="margin-right:8px;">Get a Quote</button><button class="btn-outline-purple">Compare</button></div></div>
+        <div class="alt-card"><div class="alt-logo" style="background:#0891b2;">Fn</div><div class="alt-info"><div class="alt-name">Fin by Intercom</div><div class="alt-rating"><span class="stars">★★★★½</span> 4.5/5 · 891 reviews</div></div><div><button class="btn-purple" style="margin-right:8px;">Get a Quote</button><button class="btn-outline-purple">Compare</button></div></div>
+        <!-- MODULE — after card 2 -->
+        <div class="g2-module-wrap">
+          <div class="g2-module">
+            <div class="g2-module-text">
+              <div class="g2-module-headline">AI can help you find the answers.<br>G2 helps you trust them.</div>
+              <div class="g2-module-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+              <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="14" height="14" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip">The buttons to the right will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+            </div>
+            <div class="g2-module-btns">
+              <button class="g2-connect-btn" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+              <button class="g2-connect-btn" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+            </div>
+          </div>
+        </div>
+        <div class="alt-card"><div class="alt-logo" style="background:#dc2626;">Hs</div><div class="alt-info"><div class="alt-name">HubSpot Sales Hub</div><div class="alt-rating"><span class="stars">★★★★</span> 4.4/5 · 11,243 reviews</div></div><div><button class="btn-purple" style="margin-right:8px;">Get a Quote</button><button class="btn-outline-purple">Compare</button></div></div>
+        <div class="alt-card"><div class="alt-logo" style="background:#059669;">Sl</div><div class="alt-info"><div class="alt-name">Salesloft</div><div class="alt-rating"><span class="stars">★★★★</span> 4.5/5 · 3,871 reviews</div></div><div><button class="btn-purple" style="margin-right:8px;">Get a Quote</button><button class="btn-outline-purple">Compare</button></div></div>
+        <div class="alt-card"><div class="alt-logo" style="background:#7c3aed;">Go</div><div class="alt-info"><div class="alt-name">Gong.io</div><div class="alt-rating"><span class="stars">★★★★★</span> 4.7/5 · 5,540 reviews</div></div><div><button class="btn-purple" style="margin-right:8px;">Get a Quote</button><button class="btn-outline-purple">Compare</button></div></div>
+      </div>
+    </div>
+    <!-- Compare bar -->
+    <div class="compare-bar-fixed">
+      <span style="font-size:12px;color:#4b3fcb;cursor:default;">Remove All</span>
+      <div class="compare-slots">
+        <div class="compare-slot filled" style="font-size:11px;font-weight:800;">G2</div>
+        <div class="compare-slot"></div><div class="compare-slot"></div><div class="compare-slot"></div>
+      </div>
+      <button class="btn-purple" style="margin-left:auto;">Compare Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 3: DEALS
+     ════════════════════════════════════ -->
+<div class="page-shell" id="shell-deals">
+  <nav class="g2-nav">
+    <a class="g2-logo-wrap" href="#"><div class="g2-logo-icon"><svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="Arial">G2</text></svg></div><span class="g2-logo-text">G2</span></a>
+    <div class="g2-search"><div class="g2-search-inner"><svg width="14" height="14"><use href="#ico-search"/></svg><input type="text" placeholder="Ask a question…" readonly></div></div>
+    <div class="g2-nav-links"><div class="g2-nav-link">Software <svg width="10" height="6"><use href="#ico-chevron"/></svg></div><div class="g2-nav-link">Agents <svg width="10" height="6"><use href="#ico-chevron"/></svg></div></div>
+    <div class="g2-nav-right"><div class="g2-notif"><svg width="16" height="16" color="#4b3fcb"><use href="#ico-bell"/></svg></div><button class="g2-btn-review">Leave a Review</button><span class="g2-btn-login">Join or Log In</span></div>
+  </nav>
+  <div class="deals-hero">
+    <div class="deals-hero-inner">
+      <div class="deals-h1">Save with <span>G2 Deals.</span></div>
+      <div class="deals-sub">Go ahead, start shopping.</div>
+      <div class="deals-subscribe">
+        <span style="font-size:22px;">📰</span>
+        <p>Know the most current deals immediately — subscribe for weekly deal alerts.</p>
+        <button class="btn-purple">Subscribe now</button>
+      </div>
+    </div>
+  </div>
+  <div class="deals-body">
+    <!-- Sidebar -->
+    <div class="deals-sidebar">
+      <div class="deals-sidebar-card">
+        <div class="deals-cat-link active">All offers</div>
+        <div class="deals-cat-link">Productivity</div>
+        <div class="deals-cat-link">Accounting &amp; Finance</div>
+        <div class="deals-cat-link">Customer Support</div>
+        <div class="deals-cat-link">Marketing</div>
+        <div class="deals-cat-link">Sales &amp; CRM</div>
+        <div class="deals-cat-link">HR &amp; Recruiting</div>
+      </div>
+    </div>
+    <!-- Main -->
+    <div class="deals-main">
+      <div class="deals-search-row">
+        <div class="deals-search"><svg width="14" height="14" color="#9ca3af"><use href="#ico-search"/></svg><input type="text" placeholder="Search software deals…" readonly></div>
+        <select class="sort-select"><option>Popularity</option></select>
+      </div>
+      <div class="deals-grid">
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#dbeafe,#eff6ff);">💬<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#7c3aed;">In</div><div class="deal-name">Intercom</div></div><div class="deal-rating"><span class="stars">★★★★½</span> 4.5 · 3,182 reviews</div><div class="deal-offer">20% off for new customers</div></div></div>
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#fef3c7,#fefce8);">📊<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#dc2626;">Hs</div><div class="deal-name">HubSpot CRM</div></div><div class="deal-rating"><span class="stars">★★★★</span> 4.4 · 11,243 reviews</div><div class="deal-offer">Free plan + 30% off starter</div></div></div>
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#d1fae5,#ecfdf5);">📈<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#059669;">Sl</div><div class="deal-name">Salesloft</div></div><div class="deal-rating"><span class="stars">★★★★</span> 4.5 · 3,871 reviews</div><div class="deal-offer">15% off annual plans</div></div></div>
+      </div>
+      <div class="g2-module-wrap" style="margin: 16px 0;">
+        <div class="g2-module">
+          <div class="g2-module-text">
+            <div class="g2-module-headline">AI can help you find the answers.<br>G2 helps you trust them.</div>
+            <div class="g2-module-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+            <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="14" height="14" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip">The buttons to the right will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+          </div>
+          <div class="g2-module-btns">
+            <button class="g2-connect-btn" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+            <button class="g2-connect-btn" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+          </div>
+        </div>
+      </div>
+      <div class="deals-grid">
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#fce7f3,#fdf4ff);">🎯<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#7c3aed;">Go</div><div class="deal-name">Gong.io</div></div><div class="deal-rating"><span class="stars">★★★★★</span> 4.7 · 5,540 reviews</div><div class="deal-offer">Free trial — no credit card</div></div></div>
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#e0e7ff,#ede9fe);">🔗<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#4b3fcb;">Zp</div><div class="deal-name">Zapier</div></div><div class="deal-rating"><span class="stars">★★★★</span> 4.5 · 1,264 reviews</div><div class="deal-offer">25% off Team plan</div></div></div>
+        <div class="deal-card"><div class="deal-card-img" style="background:linear-gradient(135deg,#fee2e2,#fff1f2);">🤖<div class="deal-expand">↗</div></div><div class="deal-card-body"><div class="deal-card-header"><div class="deal-logo-sm" style="background:#0052cc;">Df</div><div class="deal-name">Drift</div></div><div class="deal-rating"><span class="stars">★★★★½</span> 4.4 · 1,255 reviews</div><div class="deal-offer">Free tier available</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 4: COMPARE
+     ════════════════════════════════════ -->
+<div class="page-shell" id="shell-compare">
+  <nav class="g2-nav">
+    <a class="g2-logo-wrap" href="#"><div class="g2-logo-icon"><svg width="22" height="22" viewBox="0 0 22 22"><text x="11" y="16" text-anchor="middle" fill="white" font-size="13" font-weight="900" font-family="Arial">G2</text></svg></div><span class="g2-logo-text">G2</span></a>
+    <div class="g2-search"><div class="g2-search-inner"><svg width="14" height="14"><use href="#ico-search"/></svg><input type="text" placeholder="Ask a question…" readonly></div></div>
+    <div class="g2-nav-links"><div class="g2-nav-link">Software <svg width="10" height="6"><use href="#ico-chevron"/></svg></div><div class="g2-nav-link">Agents <svg width="10" height="6"><use href="#ico-chevron"/></svg></div></div>
+    <div class="g2-nav-right"><div class="g2-notif"><svg width="16" height="16" color="#4b3fcb"><use href="#ico-bell"/></svg></div><button class="g2-btn-review">Leave a Review</button><span class="g2-btn-login">Join or Log In</span></div>
+  </nav>
+  <div class="page-bg-lavender">
+    <div class="compare-page-inner">
+      <div class="crumb"><a href="#">Home</a> › <a href="#">Conversational Marketing</a> › <a href="#">Drift</a> › <a href="#">Qualified</a> › Drift vs Qualified</div>
+      <h1 style="font-size:26px;font-weight:800;margin-bottom:20px;">Drift vs. Qualified Comparison — What are their main differences?</h1>
+      <div style="display:flex;gap:20px;align-items:flex-start;">
+        <!-- Left rail -->
+        <div style="width:240px;flex-shrink:0;">
+          <div class="g2-module-sidebar-wrap">
+            <div class="g2-module-sidebar">
+              <div class="g2-module-headline">AI can help you find the answers. G2 helps you trust them.</div>
+              <div class="g2-module-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+              <div class="g2-module-btns" style="margin-bottom:12px;">
+                <button class="g2-connect-btn" style="width:100%;padding:10px 14px;font-size:13px;justify-content:center;" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+                <button class="g2-connect-btn" style="width:100%;padding:10px 14px;font-size:13px;justify-content:center;" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+              </div>
+              <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="14" height="14" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip" style="left:auto;right:0;">The buttons above will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+            </div>
+          </div>
+          <div class="advisory-card" style="flex-direction:column;gap:10px;margin-top:0;">
+            <div style="display:flex;gap:4px;"><div style="width:28px;height:28px;border-radius:6px;background:#0052cc;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;">Df</div><div style="width:28px;height:28px;border-radius:6px;background:#ff492c;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-left:-6px;">Qf</div></div>
+            <p style="font-size:12px;">G2 offers free expert advice to help you choose between Drift and Qualified.</p>
+            <button class="btn-purple" style="font-size:12px;padding:8px 14px;width:100%;">Chat with an expert</button>
+          </div>
+        </div>
+        <!-- Compare table -->
+        <div style="flex:1;min-width:0;">
+          <div class="compare-table-wrap">
+            <table class="compare-tbl">
+              <thead>
+                <tr>
+                  <th><div class="add-product-btn">+ Add Product</div></th>
+                  <th>
+                    <div class="compare-prod-header">
+                      <div class="compare-prod-logo" style="background:#0052cc;">Df</div>
+                      <div class="compare-prod-name">Drift</div>
+                      <div class="compare-prod-by">By <a href="#">Salesloft</a></div>
+                      <div style="margin-top:8px;"><button class="btn-purple" style="font-size:12px;padding:7px 14px;">Get a Quote</button></div>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="compare-prod-header">
+                      <div class="compare-prod-logo" style="background:#ff492c;">Qf</div>
+                      <div class="compare-prod-name">Qualified</div>
+                      <div class="compare-prod-by">By <a href="#">Qualified.com</a></div>
+                      <div style="margin-top:8px;"><button class="btn-purple" style="font-size:12px;padding:7px 14px;">Get a Quote</button></div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Reviews</td><td><span class="stars">★★★★½</span> <strong>4.4</strong>/5 <span style="color:#9ca3af;font-size:12px;">(1,255 reviews)</span></td><td><span class="stars">★★★★★</span> <strong>4.9</strong>/5 <span style="color:#9ca3af;font-size:12px;">(1,557 reviews)</span></td></tr>
+                <tr><td>Pricing</td><td><div class="price-badge">Premium</div><div style="font-size:13px;color:#374151;">Starting at $2,500.00 / year</div></td><td><div class="price-badge">Contact Us</div><div style="font-size:13px;color:#374151;">Custom pricing · Premier</div></td></tr>
+                <tr><td>Ease of Use</td><td><span class="stars">★★★★</span> 4.3/5</td><td><span class="stars">★★★★★</span> 4.8/5</td></tr>
+                <tr><td>Quality of Support</td><td><span class="stars">★★★★</span> 4.5/5</td><td><span class="stars">★★★★★</span> 4.9/5</td></tr>
+                <tr><td>Ease of Setup</td><td><span class="stars">★★★★</span> 4.3/5</td><td><span class="stars">★★★★★</span> 4.7/5</td></tr>
+                <tr><td>Key Features</td><td style="font-size:13px;color:#374151;">Conversational AI · Lead routing · Playbooks · ABM</td><td style="font-size:13px;color:#374151;">Pipeline AI · Intent detection · Live chat · Pounce</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 5: IN-CHAT
+     ════════════════════════════════════ -->
+<div class="page-shell" id="shell-inchat">
+  <!-- Product bar matching screenshot -->
+  <div class="chat-product-bar">
+    <div class="chat-product-info">
+      <div class="chat-product-logo">G2</div>
+      <div>
+        <div class="chat-product-name">Qualified</div>
+        <div class="chat-product-rating">★★★★★ 4.9/5 (1,557)</div>
+      </div>
+    </div>
+    <button style="background:#ff492c;color:#fff;border:none;border-radius:24px;padding:10px 20px;font-size:13px;font-weight:700;cursor:default;font-family:inherit;">Calculate Your ROI</button>
+  </div>
+  <div style="display:flex;background:#fff;border-bottom:1px solid #e5e7eb;">
+    <div style="width:200px;flex-shrink:0;border-right:1px solid #e5e7eb;">
+      <div class="chat-left-nav-item">Product Information</div>
+      <div class="chat-left-nav-item">Reviews</div>
+      <div class="chat-left-nav-item">Discussions</div>
+      <div class="chat-left-nav-item active">Pricing</div>
+      <div class="chat-left-nav-item">Features</div>
+      <div class="chat-left-nav-item">Implementation</div>
+      <div style="height:16px;border-bottom:1px solid #e5e7eb;"></div>
+      <div class="chat-left-nav-item" style="color:#4b3fcb;font-weight:600;">Leave a Review</div>
+    </div>
+    <div style="flex:1;background:#f3f4f6;padding:24px;display:flex;justify-content:center;">
+      <div class="chat-window-outer">
+        <!-- G2.ai chat panel matching screenshot -->
+        <div class="chat-window">
+          <div class="chat-win-header">
+            <div class="chat-win-title">
+              <div class="chat-win-logo"><svg width="14" height="14" color="#fff"><use href="#ico-g2-chat"/></svg></div>
+              G2.ai
+            </div>
+            <div class="chat-win-controls">⊞ ↗ −</div>
+          </div>
+          <div class="chat-messages">
+            <div class="chat-msg-ai">
+              <div class="chat-avatar"><svg width="14" height="14" color="#fff"><use href="#ico-g2-chat"/></svg></div>
+              <div class="chat-bubble-ai">
+                Hello! I am G2.ai, an AI assistant designed to help you find the best solutions for your business needs.<br><br>
+                How can I help you today?
+              </div>
+            </div>
+            <div class="chat-msg-user">
+              <div class="chat-bubble-user">What's the best chatbot software for enterprise?</div>
+            </div>
+            <div class="chat-msg-ai">
+              <div class="chat-avatar"><svg width="14" height="14" color="#fff"><use href="#ico-g2-chat"/></svg></div>
+              <div class="chat-bubble-ai">
+                Based on G2 reviews, top enterprise chatbot options include <strong>Qualified</strong> (4.9★), <strong>Intercom</strong> (4.5★), and <strong>Drift</strong> (4.4★). Qualified leads in pipeline generation; Intercom is strongest for customer support at scale.<br><br>
+                For live pricing and a deeper comparison grounded in real buyer data, connect G2 directly to your AI assistant:
+                <div class="g2-module-compact-wrap">
+                  <div class="g2-module-compact">
+                    <div class="g2-compact-text">
+                      <div class="g2-compact-headline">AI can help you find the answers.<br>G2 helps you trust them.</div>
+                      <div class="g2-compact-body">Connect G2 to Claude or ChatGPT for answers grounded in G2's trusted reviews, comparisons, and pricing from real user insights.</div>
+                      <div class="g2-tip-wrap"><div class="g2-tip-trigger"><svg width="13" height="13" color="#9ca3af"><use href="#ico-info"/></svg> How it works</div><div class="g2-tooltip">The buttons to the right will take you to the corresponding website to connect the G2 MCP. All that will be required is your G2 login for authentication.</div></div>
+                    </div>
+                    <div class="g2-compact-btns">
+                      <button class="g2-connect-btn-sm" onclick="openOverlay('chatgpt')">Connect G2 to ChatGPT</button>
+                      <button class="g2-connect-btn-sm" onclick="openOverlay('claude')">Connect G2 to Claude</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input class="chat-input" type="text" placeholder="Message…">
+            <div class="chat-input-btns">
+              <button class="chat-mic-btn"><svg width="14" height="14" color="#9ca3af"><use href="#ico-mic"/></svg></button>
+              <button class="chat-send-btn"><svg width="14" height="14" color="#fff"><use href="#ico-send"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     CHATGPT OVERLAY
+     ════════════════════════════════════ -->
+<div class="overlay-backdrop" id="ovl-chatgpt">
+  <div class="overlay-win">
+    <button class="overlay-x" onclick="closeOverlay('chatgpt')">✕</button>
+    <div class="br-chrome">
+      <div style="padding:0 4px;"><div class="br-lights"><div class="br-dot br-red"></div><div class="br-dot br-yellow"></div><div class="br-dot br-green"></div></div></div>
+      <div class="br-tabs"><div class="br-tab"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6.5" fill="#111"/><circle cx="6.5" cy="6.5" r="4" fill="#fff"/><circle cx="6.5" cy="6.5" r="2" fill="#111"/></svg> ChatGPT</div></div>
+      <div class="br-addr"><div class="br-url" id="gpt-url">chatgpt.com/gpts/discovery</div></div>
+    </div>
+    <div class="br-content">
+
+      <!-- STEP 1 -->
+      <div class="ovl-step active" id="gs1">
+        <div class="gpt-sb">
+          <div class="gpt-sb-logo"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#111"/><circle cx="9" cy="9" r="5.5" fill="#fff"/><circle cx="9" cy="9" r="2.5" fill="#111"/></svg> ChatGPT</div>
+          <div class="gpt-sb-item">＋ New chat</div>
+          <div class="gpt-sb-item">🖼 Images <span style="background:#e5e7eb;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;">UPDATED</span></div>
+          <div class="gpt-sb-item">📚 Library</div>
+          <div class="gpt-sb-item">🕐 Scheduled</div>
+          <div class="gpt-sb-item active">⊞ Plugins</div>
+          <div class="gpt-sb-item">📁 Projects</div>
+          <div class="gpt-sb-item">💻 Codex</div>
+          <div class="gpt-sb-item">··· More</div>
+          <div class="gpt-sb-label">Recents</div>
+          <div class="gpt-sb-recent">UI Mockup Improvements</div>
+          <div class="gpt-sb-recent">Leadership Panel Questions</div>
+          <div class="gpt-sb-recent">Rewrite Bidding Message</div>
+          <div class="gpt-sb-recent">PPC Term Familiarity</div>
+          <div class="gpt-sb-recent">Feedback prompts for engineers</div>
+          <div class="gpt-sb-recent">Fantasy Football League Names</div>
+          <div class="gpt-sb-recent">G2 Ads User testing questions</div>
+          <div class="gpt-sb-user"><div style="display:flex;align-items:center;gap:8px;"><div class="gpt-avatar">AR</div><div><div style="font-size:12px;font-weight:600;">Aryn</div><div style="font-size:11px;color:#999;">Free</div></div></div><span class="gpt-upgrade-pill">Upgrade</span></div>
+        </div>
+        <div class="gpt-main">
+          <h1 style="font-size:26px;font-weight:700;margin-bottom:5px;">Plugins</h1>
+          <p style="color:#6b7280;font-size:13.5px;margin-bottom:18px;">Work with ChatGPT across your favorite tools.</p>
+          <div class="plug-search"><svg width="13" height="13" color="#9ca3af"><use href="#ico-search"/></svg><input type="text" value="g2" readonly style="background:transparent;"><span style="color:#9ca3af;cursor:pointer;font-size:13px;">✕</span></div>
+          <div class="plug-section-label">Public</div>
+          <div class="plug-grid">
+            <div class="plug-card">
+              <svg class="plug-icon" viewBox="0 0 44 44"><rect width="44" height="44" rx="10" fill="#e8401c"/><text x="22" y="28" text-anchor="middle" fill="white" font-size="15" font-weight="900" font-family="Arial">G2</text></svg>
+              <div style="flex:1;"><div class="plug-name">G2 MCP</div><div class="plug-desc">Real Buyer Behavior from G2</div></div>
+              <button class="plug-add" onclick="gptStep(2)">+</button>
+            </div>
+            <div class="plug-card">
+              <svg class="plug-icon" viewBox="0 0 44 44"><rect width="44" height="44" rx="10" fill="#f59e0b"/><circle cx="22" cy="22" r="13" fill="#111"/></svg>
+              <div style="flex:1;"><div class="plug-name">GPS-Ortung24</div><div class="plug-desc">Query your vehicle fleet</div></div>
+              <button class="plug-add" style="cursor:default;">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="ovl-step" id="gs2">
+        <div class="gpt-sb">
+          <div class="gpt-sb-logo"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#111"/><circle cx="9" cy="9" r="5.5" fill="#fff"/><circle cx="9" cy="9" r="2.5" fill="#111"/></svg> ChatGPT</div>
+          <div class="gpt-sb-item active">⊞ Plugins</div>
+          <div class="gpt-sb-label">Recents</div>
+          <div class="gpt-sb-recent">UI Mockup Improvements</div>
+          <div class="gpt-sb-recent">Leadership Panel Questions</div>
+          <div class="gpt-sb-recent">Rewrite Bidding Message</div>
+          <div class="gpt-sb-user"><div style="display:flex;align-items:center;gap:8px;"><div class="gpt-avatar">AR</div><div><div style="font-size:12px;font-weight:600;">Aryn</div><div style="font-size:11px;color:#999;">Free</div></div></div><span class="gpt-upgrade-pill">Upgrade</span></div>
+        </div>
+        <div class="gpt-main">
+          <div class="det-back">‹ Plugins</div>
+          <div class="det-hdr">
+            <div>
+              <svg class="det-logo" viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#e8401c"/><text x="28" y="36" text-anchor="middle" fill="white" font-size="19" font-weight="900" font-family="Arial">G2</text></svg>
+              <div class="det-title">G2 MCP</div>
+              <div class="det-subtitle">Real Buyer Behavior from G2</div>
+            </div>
+            <button class="det-install-btn" onclick="gptStep(3)">Install plugin</button>
+          </div>
+          <div class="det-preview"><div class="det-preview-card"><div style="font-size:12px;font-weight:600;margin-bottom:8px;">Create a Research Board for Slack</div><div style="background:#111;height:26px;border-radius:4px;margin-bottom:7px;"></div><div style="height:7px;background:#374151;border-radius:3px;margin-bottom:5px;"></div><div style="height:7px;background:#f59e0b;border-radius:3px;width:55%;"></div></div></div>
+          <div class="det-desc">Use G2 data in ChatGPT to research and compare software using verified reviews and product information. Explore Research Boards to evaluate and compare solutions, and access Buyer Intent data to understand how companies are researching and engaging with products and competitors.</div>
+          <div class="det-section-title">App</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;"><svg viewBox="0 0 32 32" width="32" height="32"><rect width="32" height="32" rx="8" fill="#e8401c"/><text x="16" y="21" text-anchor="middle" fill="white" font-size="11" font-weight="900" font-family="Arial">G2</text></svg><span style="font-size:13px;font-weight:600;">G2 MCP</span></div>
+          <div class="det-section-title">Information</div>
+          <div class="det-info-row"><span class="det-info-label">Developer</span><span>G2</span></div>
+          <div class="det-info-row"><span class="det-info-label">Category</span><strong>Business &amp; Operations</strong></div>
+          <div class="det-info-row"><span class="det-info-label">Version</span><span>1.0.0</span></div>
+          <div class="det-info-row"><span class="det-info-label">Privacy Policy</span><span style="color:#4b3fcb;">↗</span></div>
+        </div>
+      </div>
+
+      <!-- STEP 3 (auth) -->
+      <div class="ovl-step" id="gs3" style="position:relative;">
+        <div class="gpt-sb">
+          <div class="gpt-sb-logo"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#111"/><circle cx="9" cy="9" r="5.5" fill="#fff"/><circle cx="9" cy="9" r="2.5" fill="#111"/></svg> ChatGPT</div>
+          <div class="gpt-sb-item active">⊞ Plugins</div>
+          <div class="gpt-sb-user"><div style="display:flex;align-items:center;gap:8px;"><div class="gpt-avatar">AR</div><div><div style="font-size:12px;font-weight:600;">Aryn</div><div style="font-size:11px;color:#999;">Free</div></div></div><span class="gpt-upgrade-pill">Upgrade</span></div>
+        </div>
+        <div style="flex:1;position:relative;">
+          <div style="padding:24px 32px;opacity:.25;pointer-events:none;"><div style="font-size:20px;font-weight:700;">G2 MCP</div><div style="color:#9ca3af;font-size:13px;">Real Buyer Behavior from G2</div></div>
+          <div class="auth-overlay">
+            <div>
+              <div class="auth-box">
+                <div class="auth-hdr"><svg viewBox="0 0 18 18" width="16" height="16"><rect width="18" height="18" rx="4" fill="#e8401c"/><text x="9" y="13" text-anchor="middle" fill="white" font-size="9" font-weight="900" font-family="Arial">G2</text></svg> Sign in with G2</div>
+                <div class="auth-body">
+                  <svg class="auth-big-logo" viewBox="0 0 62 62"><circle cx="31" cy="31" r="31" fill="#e8401c"/><text x="31" y="40" text-anchor="middle" fill="white" font-size="21" font-weight="900" font-family="Arial">G2</text></svg>
+                  <div class="auth-title">Sign up for ChatGPT MCP</div>
+                  <div class="auth-as">You're signing up as<br><strong>Aryn Silverberg (asilverberg@g2.com)</strong></div>
+                  <div class="auth-perms">To continue, G2 will share authentication permission, your Buyer Intent, your products, your Reviews, your profile information, your Research Boards, write access to your Research Boards, your Vendors, read only access to data including buyer intent, your Product Ratings, your Discussions, your Product Features, your Video Reviews, your Downloads, your Questions, your Screenshots, your G2 Activate unlocked companies, and Write with ChatGPT MCP. Before using this app, you can review the <a href="#">privacy policy</a> and <a href="#">terms of service</a> for ChatGPT MCP.</div>
+                  <div class="auth-actions"><button class="auth-cancel-btn">cancel</button><button class="auth-signup-btn" onclick="gptStep(4)">Sign Up</button></div>
+                  <div class="auth-privacy"><a href="#">G2 Privacy Policy</a></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 (success) -->
+      <div class="ovl-step" id="gs4">
+        <div class="gpt-sb">
+          <div class="gpt-sb-logo"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#111"/><circle cx="9" cy="9" r="5.5" fill="#fff"/><circle cx="9" cy="9" r="2.5" fill="#111"/></svg> ChatGPT</div>
+          <div class="gpt-sb-item active">⊞ Plugins</div>
+          <div class="gpt-sb-label">Recents</div>
+          <div class="gpt-sb-recent">UI Mockup Improvements</div>
+          <div class="gpt-sb-recent">Leadership Panel Questions</div>
+          <div class="gpt-sb-user"><div style="display:flex;align-items:center;gap:8px;"><div class="gpt-avatar">AR</div><div><div style="font-size:12px;font-weight:600;">Aryn</div><div style="font-size:11px;color:#999;">Free</div></div></div><span class="gpt-upgrade-pill">Upgrade</span></div>
+        </div>
+        <div class="gpt-main">
+          <div style="display:flex;justify-content:center;margin-bottom:16px;"><div class="toast-green"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="6" fill="rgba(255,255,255,.2)"/><path d="M3.5 6.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> MCP Installed <span style="opacity:.5;margin-left:6px;">✕</span></div></div>
+          <div class="det-hdr">
+            <div>
+              <svg class="det-logo" viewBox="0 0 56 56"><rect width="56" height="56" rx="14" fill="#e8401c"/><text x="28" y="36" text-anchor="middle" fill="white" font-size="19" font-weight="900" font-family="Arial">G2</text></svg>
+              <div class="det-title">G2 MCP</div>
+              <div class="det-subtitle">Real Buyer Behavior from G2</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;color:#9ca3af;">···</span><button style="background:#111;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;" onclick="gptStep(5)">Try in chat</button></div>
+          </div>
+          <div class="det-preview"><div class="det-preview-card"><div style="font-size:12px;font-weight:600;margin-bottom:8px;">Create a Research Board for Slack</div><div style="background:#111;height:26px;border-radius:4px;margin-bottom:7px;"></div><div style="height:7px;background:#374151;border-radius:3px;margin-bottom:5px;"></div><div style="height:7px;background:#f59e0b;border-radius:3px;width:55%;"></div></div></div>
+          <div class="det-desc">Use G2 data in ChatGPT to research and compare software using verified reviews and product information.</div>
+          <div class="det-section-title">Information</div>
+          <div class="det-info-row"><span class="det-info-label">Developer</span><span>G2</span></div>
+          <div class="det-info-row"><span class="det-info-label">Category</span><strong>Business &amp; Operations</strong></div>
+          <div class="det-info-row"><span class="det-info-label">Version</span><span>1.0.0</span></div>
+        </div>
+      </div>
+
+      <!-- STEP 5: Try in chat — ChatGPT home with G2 MCP chip -->
+      <div class="ovl-step" id="gs5" style="background:#f9f9f9;">
+        <div class="gpt-sb">
+          <div class="gpt-sb-logo"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="9" fill="#111"/><circle cx="9" cy="9" r="5.5" fill="#fff"/><circle cx="9" cy="9" r="2.5" fill="#111"/></svg> ChatGPT</div>
+          <div class="gpt-sb-item">＋ New chat</div>
+          <div class="gpt-sb-item">🖼 Images <span style="background:#e5e7eb;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;">UPDATED</span></div>
+          <div class="gpt-sb-item">📚 Library</div>
+          <div class="gpt-sb-item">🕐 Scheduled</div>
+          <div class="gpt-sb-item">⊞ Plugins</div>
+          <div class="gpt-sb-item">📁 Projects</div>
+          <div class="gpt-sb-item">💻 Codex</div>
+          <div class="gpt-sb-item">··· More</div>
+          <div class="gpt-sb-label">Recents</div>
+          <div class="gpt-sb-recent">UI Mockup Improvements</div>
+          <div class="gpt-sb-recent">Leadership Panel Questions</div>
+          <div class="gpt-sb-recent">Rewrite Bidding Message</div>
+          <div class="gpt-sb-recent">PPC Term Familiarity</div>
+          <div class="gpt-sb-user"><div style="display:flex;align-items:center;gap:8px;"><div class="gpt-avatar">AR</div><div><div style="font-size:12px;font-weight:600;">Aryn</div><div style="font-size:11px;color:#999;">Free</div></div></div><span class="gpt-upgrade-pill">Upgrade</span></div>
+        </div>
+        <!-- Main chat area — matches screenshot exactly -->
+        <div style="flex:1;display:flex;flex-direction:column;background:#fff;">
+          <!-- Top bar matching screenshot: Chat/Work toggle + Upgrade -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid #f0f0f0;">
+            <div style="display:flex;align-items:center;gap:0;background:#f0f0f0;border-radius:20px;padding:3px;">
+              <div style="padding:5px 16px;border-radius:16px;background:#fff;font-size:12px;font-weight:600;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.1);">Chat</div>
+              <div style="padding:5px 16px;font-size:12px;font-weight:500;color:#4b3fcb;display:flex;align-items:center;gap:4px;">+ Work</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;">
+              <span style="font-size:12px;color:#4b3fcb;font-weight:500;display:flex;align-items:center;gap:4px;">✦ Upgrade</span>
+              <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #ddd;"></div>
+            </div>
+          </div>
+          <!-- Centered greeting -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px 0;">
+            <div style="font-size:20px;font-weight:600;color:#111;margin-bottom:28px;">What's on the agenda today?</div>
+            <!-- Input bar with G2 MCP chip — matches screenshot -->
+            <div style="width:100%;max-width:560px;border:1px solid #e5e7eb;border-radius:28px;padding:10px 14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:16px;color:#666;flex-shrink:0;cursor:default;">+</div>
+              <!-- G2 MCP chip -->
+              <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                <svg viewBox="0 0 18 18" width="18" height="18"><rect width="18" height="18" rx="4" fill="#e8401c"/><text x="9" y="13" text-anchor="middle" fill="white" font-size="9" font-weight="900" font-family="Arial">G2</text></svg>
+                <span style="font-size:13px;font-weight:600;color:#4b3fcb;">G2 MCP</span>
+              </div>
+              <div style="flex:1;font-size:13.5px;color:#9ca3af;">Create a Research Board for Slack</div>
+              <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;gap:4px;color:#9ca3af;font-size:12px;cursor:default;">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#9ca3af" stroke-width="1.3"/><path d="M5 7h4M7 5v4" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/></svg>
+                  Think
+                </div>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="6" height="8" rx="3" stroke="#9ca3af" stroke-width="1.3"/><path d="M2 8a5 5 0 0010 0M7 13v1" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <div style="width:28px;height:28px;border-radius:50%;background:#4b3fcb;display:flex;align-items:center;justify-content:center;">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 6.5L11.5 1.5L8 12L6.5 7.5L1.5 6.5Z" fill="white"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     CLAUDE OVERLAY
+     ════════════════════════════════════ -->
+<div class="overlay-backdrop" id="ovl-claude">
+  <div class="overlay-win">
+    <button class="overlay-x" onclick="closeOverlay('claude')">✕</button>
+    <div class="dt-chrome">
+      <div class="dt-titlebar">
+        <div class="dt-lights"><div class="br-dot br-red"></div><div class="br-dot br-yellow"></div><div class="br-dot br-green"></div></div>
+        <div class="dt-title"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L15 13H1L8 1.5Z" fill="#d97706" opacity=".85"/><path d="M8 5.5L12 13H4L8 5.5Z" fill="#fbbf24"/></svg> Claude</div>
+        <div class="dt-spacer"></div>
+      </div>
+    </div>
+    <div class="br-content">
+
+      <!-- CLAUDE STEP 1: Connectors list (real Claude Settings UI) -->
+      <div class="ovl-step active" id="cs1" style="background:#fff;">
+        <!-- Real Claude left nav -->
+        <div style="width:220px;flex-shrink:0;border-right:1px solid #eee;display:flex;flex-direction:column;padding:16px 0;font-size:13px;color:#374151;overflow-y:auto;">
+          <div style="padding:0 12px 12px;"><div style="background:#f3f4f6;border-radius:8px;display:flex;align-items:center;gap:8px;padding:7px 12px;color:#9ca3af;font-size:13px;"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6" cy="6" r="5" stroke="#9ca3af" stroke-width="1.3"/><path d="M10 10l2 2" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/></svg> Search</div></div>
+          <div style="padding:6px 16px 4px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Settings</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;color:#374151;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#6b7280" stroke-width="1.3"/><circle cx="7" cy="5" r="1.5" fill="#6b7280"/><path d="M7 8v3" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Preferences</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="#6b7280" stroke-width="1.3"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#6b7280" stroke-width="1.3"/></svg> Account</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="2" stroke="#6b7280" stroke-width="1.3"/><path d="M5 7h4M7 5v4" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Privacy</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10V4l5-2 5 2v6l-5 2-5-2z" stroke="#6b7280" stroke-width="1.3"/></svg> Usage</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="8" rx="1.5" stroke="#6b7280" stroke-width="1.3"/><path d="M4 3V2M10 3V2" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Capabilities</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="#6b7280" stroke-width="1.3"/><path d="M3 13a4 4 0 018 0" stroke="#6b7280" stroke-width="1.3"/><path d="M10 3l1 1-1 1" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Memory</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 2h8l1 2-1 2H3L2 4l1-2z" stroke="#6b7280" stroke-width="1.3"/><path d="M4 6v6" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Claude Code</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="2" stroke="#6b7280" stroke-width="1.3"/><path d="M5 5h4M5 7h4M5 9h2" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg> Cowork</div>
+          <div style="padding:6px 16px 4px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-top:6px;">Desktop app</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;">General</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;">Extensions</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;">Developer</div>
+          <div style="padding:6px 16px 4px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-top:6px;">Customize</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;">Skills</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:#f0f0f0;border-radius:6px;margin:0 8px;font-weight:600;cursor:default;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="#111" stroke-width="1.5"/><path d="M4 7h6M7 4v6" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></svg> Connectors
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:default;">Plugins</div>
+          <div style="margin-top:auto;padding:12px 16px 4px;font-size:11px;color:#9ca3af;">G2.com Inc.</div>
+        </div>
+        <!-- Connectors main panel -->
+        <div style="flex:1;padding:28px 32px;overflow-y:auto;position:relative;">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+            <div style="font-size:22px;font-weight:700;">Connectors</div>
+            <div style="flex:1;display:flex;align-items:center;gap:8px;background:#f3f4f6;border-radius:8px;padding:8px 14px;max-width:340px;">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6" cy="6" r="5" stroke="#9ca3af" stroke-width="1.3"/><path d="M10 10l2 2" stroke="#9ca3af" stroke-width="1.3" stroke-linecap="round"/></svg>
+              <span style="font-size:13px;color:#9ca3af;">Search connectors</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid #eee;">
+            <div style="padding:8px 16px 10px;font-size:13px;font-weight:600;border-bottom:2px solid #111;margin-bottom:-1px;cursor:default;">Your connectors</div>
+            <div style="padding:8px 16px 10px;font-size:13px;color:#9ca3af;cursor:default;">Discover</div>
+          </div>
+          <!-- Connector rows matching screenshot -->
+          <div style="display:table;width:100%;border-collapse:collapse;">
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;width:32px;"><div style="width:28px;height:28px;border-radius:6px;background:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:14px;">📄</div></div>
+              <div style="display:table-cell;padding:12px 16px 12px 8px;vertical-align:middle;font-size:13px;font-weight:500;">Docusign</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#9ca3af;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:default;font-family:inherit;">Connect</button></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><div style="width:28px;height:28px;border-radius:6px;background:#111;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">Dv</div></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:500;">Dovetail</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#9ca3af;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:default;font-family:inherit;">Connect</button></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#ff5733,#7b61ff,#1abcfe,#0acf83);display:flex;align-items:center;justify-content:center;font-size:16px;">✦</div></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:500;">Figma</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Individual</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><svg viewBox="0 0 28 28" width="28" height="28"><rect width="28" height="28" rx="7" fill="#e8401c"/><text x="14" y="19" text-anchor="middle" fill="white" font-size="10" font-weight="900" font-family="Arial">G2</text></svg></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:500;">G2 Dev ND</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web <span style="background:#f3f4f6;border-radius:4px;padding:2px 6px;font-size:11px;color:#6b7280;margin-left:4px;">Custom</span></div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#9ca3af;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:default;font-family:inherit;">Connect</button></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><svg viewBox="0 0 28 28" width="28" height="28"><rect width="28" height="28" rx="7" fill="#e8401c"/><text x="14" y="19" text-anchor="middle" fill="white" font-size="10" font-weight="900" font-family="Arial">G2</text></svg></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:500;">G2 Interviews</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web <span style="background:#f3f4f6;border-radius:4px;padding:2px 6px;font-size:11px;color:#6b7280;margin-left:4px;">Custom</span></div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#9ca3af;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:default;font-family:inherit;">Connect</button></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;background:#fafafa;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><svg viewBox="0 0 28 28" width="28" height="28"><rect width="28" height="28" rx="7" fill="#e8401c"/><text x="14" y="19" text-anchor="middle" fill="white" font-size="10" font-weight="900" font-family="Arial">G2</text></svg></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:600;">G2 MCP</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web <span style="background:#f3f4f6;border-radius:4px;padding:2px 6px;font-size:11px;color:#6b7280;margin-left:4px;">Custom</span></div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:pointer;font-family:inherit;font-weight:600;" onclick="clStep(2)">Connect</button></div>
+            </div>
+            <div style="display:table-row;border-bottom:1px solid #f3f4f6;">
+              <div style="display:table-cell;padding:12px 8px 12px 0;vertical-align:middle;"><svg viewBox="0 0 28 28" width="28" height="28"><rect width="28" height="28" rx="7" fill="#e8401c"/><text x="14" y="19" text-anchor="middle" fill="white" font-size="10" font-weight="900" font-family="Arial">G2</text></svg></div>
+              <div style="display:table-cell;padding:12px 16px;vertical-align:middle;font-size:13px;font-weight:500;">G2 MCP Server</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#6b7280;">Web</div>
+              <div style="display:table-cell;padding:12px;vertical-align:middle;font-size:12px;color:#9ca3af;">—</div>
+              <div style="display:table-cell;padding:12px 0;vertical-align:middle;text-align:right;"><button style="border:1px solid #d1d5db;border-radius:6px;padding:5px 14px;font-size:12px;background:#fff;cursor:default;font-family:inherit;">Connect</button></div>
+            </div>
+          </div>
+        </div>
+        <!-- X close button in top right of content area -->
+        <div style="position:absolute;top:14px;right:14px;cursor:pointer;color:#9ca3af;font-size:16px;z-index:5;"></div>
+      </div>
+
+      <!-- CLAUDE STEP 2: "Finish connecting a connector?" page -->
+      <div class="ovl-step" id="cs2" style="background:#f8f7f4;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;">
+          <div style="font-size:26px;font-weight:600;color:#111;margin-bottom:16px;line-height:1.3;">Finish connecting a connector?</div>
+          <div style="font-size:15px;color:#6b7280;line-height:1.7;max-width:480px;margin-bottom:28px;">A link brought you here. Only continue if you started connecting a connector from Claude Desktop — a link on its own can never connect anything to your account.</div>
+          <div style="display:flex;align-items:center;gap:6px;color:#6b7280;font-size:14px;margin-bottom:24px;cursor:default;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Show destination
+          </div>
+          <button onclick="clStep(3)" style="background:#111;color:#fff;border:none;border-radius:24px;padding:13px 32px;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:16px;">Continue connecting</button>
+          <div style="color:#4b3fcb;font-size:14px;text-decoration:underline;cursor:default;">Not now</div>
+        </div>
+      </div>
+
+      <!-- CLAUDE STEP 3: G2 Sign in with G2 modal -->
+      <div class="ovl-step" id="cs3" style="background:#f8f7f4;align-items:center;justify-content:center;flex-direction:column;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;width:420px;box-shadow:0 4px 24px rgba(0,0,0,.1);overflow:hidden;">
+          <div style="padding:13px 18px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:10px;font-size:13px;color:#555;">
+            <svg viewBox="0 0 20 20" width="18" height="18"><rect width="20" height="20" rx="5" fill="#e8401c"/><text x="10" y="14" text-anchor="middle" fill="white" font-size="10" font-weight="900" font-family="Arial">G2</text></svg>
+            Sign in with G2
+          </div>
+          <div style="padding:26px 26px 20px;text-align:center;">
+            <svg viewBox="0 0 72 72" width="72" height="72" style="margin:0 auto 16px;display:block;"><circle cx="36" cy="36" r="36" fill="#e8401c"/><text x="36" y="47" text-anchor="middle" fill="white" font-size="24" font-weight="900" font-family="Arial">G2</text></svg>
+            <div style="font-size:20px;font-weight:700;margin-bottom:10px;text-align:left;">Sign up for Claude MCP</div>
+            <div style="font-size:13px;color:#555;margin-bottom:14px;text-align:left;">You're signing up as<br><strong>Aryn Silverberg (asilverberg@g2.com)</strong></div>
+            <div style="font-size:12.5px;color:#555;line-height:1.65;text-align:left;margin-bottom:18px;">To continue, G2 will share authentication permission, your profile information, read only access to data including buyer intent, write access to data including buyer intent, your G2 Activate unlocked companies, Write, your Research Boards, write access to your Research Boards, your products, your Product Ratings, your Discussions, your Product Features, your Video Reviews, your Product Videos, your Snippets, your Reviews, Read, your Integration Reviews, your Downloads, your Data Solutions Reviews, your Vendors, your Questions, your Screenshots, your Buyer Intent, your Market Signals, and Read with Claude MCP. Before using this app, you can review the <a href="#" style="color:#4b3fcb;">privacy policy</a> and <a href="#" style="color:#4b3fcb;">terms of service</a> for Claude MCP.</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <button style="color:#4b3fcb;background:none;border:none;font-size:14px;cursor:default;font-family:inherit;">cancel</button>
+              <button onclick="clStep(4)" style="background:#3d3580;color:#fff;border:none;border-radius:24px;padding:12px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Sign Up</button>
+            </div>
+            <div style="font-size:12px;"><a href="#" style="color:#4b3fcb;">G2 Privacy Policy</a></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLAUDE STEP 4: Claude desktop home + dismissable toast -->
+      <div class="ovl-step" id="cs4" style="background:#f8f7f2;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+        <!-- Dismissable toast -->
+        <div id="cl-connected-toast" style="position:absolute;top:16px;right:16px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.1);font-size:13px;z-index:10;transition:opacity .3s;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#22c55e"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-weight:500;color:#111;">G2 MCP connected</span>
+          <button onclick="document.getElementById('cl-connected-toast').style.opacity='0';setTimeout(()=>document.getElementById('cl-connected-toast').style.display='none',300)" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;">×</button>
+        </div>
+        <!-- Claude home UI matching screenshot -->
+        <div style="text-align:center;margin-bottom:36px;display:flex;align-items:center;justify-content:center;gap:12px;">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2C12 2 8 6 8 10c0 2 1 4 2 5L8 28l8-4 8 4-2-13c1-1 2-3 2-5 0-4-4-8-8-8z" fill="#c96a3a" opacity=".85"/><path d="M16 6c-2.5 0-4 2-4 4s1.5 4 4 4 4-2 4-4-1.5-4-4-4z" fill="#e08050"/></svg>
+          <div style="font-size:30px;font-weight:500;color:#111;letter-spacing:-.5px;">Hey there, Aryn</div>
+        </div>
+        <!-- Input box -->
+        <div style="width:100%;max-width:580px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;">
+          <div style="padding:16px 18px 8px;font-size:14px;color:#9ca3af;">Type / for skills</div>
+          <div style="padding:10px 18px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-size:20px;color:#6b7280;cursor:default;">+</div>
+              <div style="display:flex;gap:6px;">
+                <div style="border:1px solid #e5e7eb;border-radius:20px;padding:5px 14px;font-size:12.5px;font-weight:600;color:#111;cursor:default;background:#fff;">Chat</div>
+                <div style="border:1px solid #e5e7eb;border-radius:20px;padding:5px 14px;font-size:12.5px;color:#6b7280;cursor:default;">Cowork</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;color:#6b7280;">
+              <span style="font-size:13px;font-weight:600;color:#111;">Sonnet 5</span>
+              <span style="font-size:13px;color:#9ca3af;">Medium</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="9" rx="3" stroke="#6b7280" stroke-width="1.3"/><path d="M2 9a6 6 0 0012 0M8 15v1" stroke="#6b7280" stroke-width="1.3" stroke-linecap="round"/></svg>
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><rect x="0" y="5" width="2" height="4" rx="1" fill="#6b7280"/><rect x="4" y="3" width="2" height="8" rx="1" fill="#6b7280"/><rect x="8" y="0" width="2" height="14" rx="1" fill="#6b7280"/><rect x="12" y="3" width="2" height="8" rx="1" fill="#6b7280"/><rect x="16" y="5" width="2" height="4" rx="1" fill="#6b7280"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.proto-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.proto-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page-shell').forEach(s => s.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('shell-' + this.dataset.tab).classList.add('active');
+  });
+});
+
+// Overlay open/close
+function openOverlay(type) {
+  if (type === 'chatgpt') {
+    ['gs1','gs2','gs3','gs4','gs5'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById('gs1').classList.add('active');
+    document.getElementById('gpt-url').textContent = 'chatgpt.com/gpts/discovery';
+  } else {
+    ['cs1','cs2','cs3','cs4'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById('cs1').classList.add('active');
+    const t = document.getElementById('cl-connected-toast');
+    if (t) { t.style.opacity='1'; t.style.display='flex'; }
+  }
+  document.getElementById('ovl-' + type).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeOverlay(type) {
+  document.getElementById('ovl-' + type).classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.querySelectorAll('.overlay-backdrop').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) { el.classList.remove('open'); document.body.style.overflow = ''; } });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.overlay-backdrop.open').forEach(el => { el.classList.remove('open'); document.body.style.overflow = ''; });
+});
+
+// GPT steps
+const gptUrls = { 1:'chatgpt.com/gpts/discovery', 2:'chatgpt.com/gpts/g2mcp', 3:'chatgpt.com/gpts/g2mcp', 4:'chatgpt.com/gpts/g2mcp', 5:'chatgpt.com' };
+function gptStep(n) {
+  ['gs1','gs2','gs3','gs4','gs5'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('gs'+n).classList.add('active');
+  document.getElementById('gpt-url').textContent = gptUrls[n];
+}
+// Claude steps
+function clStep(n) {
+  ['cs1','cs2','cs3','cs4'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('cs'+n).classList.add('active');
+}
+</script>
+
+<!--
+OPEN QUESTIONS / ASSUMPTIONS
+1. Module bg: White card (matches reference screenshot). Lavender/periwinkle bg is a quick CSS swap if preferred.
+2. In-chat shell: Modeled on the G2.ai chat panel shown in your screenshot — product page sidebar nav, product header bar, G2.ai branded chat window with orange logo.
+3. Claude overlay: No real screenshots provided. Steps 2–3 are plausible approximations; step 3 auth is clearly labeled "Approximate." Swap in real screenshots when available.
+4. Category/Alternatives/Compare/Deals page shells now match real G2 layout patterns captured via live screenshots: correct nav (search bar, "Leave a Review" / "Join or Log In" CTAs), real sidebar filters, real card structure with pro/con tags, real compare table with "+ Add Product", real Deals hero with subscribe strip.
+5. Page shells are static — no filtering, sorting, or pagination interactions.
+6. The sticky compare bar on the Alternatives page is fixed to the viewport bottom (as on the real page).
+-->
+</body>
+</html>
