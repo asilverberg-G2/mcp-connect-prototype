@@ -1,0 +1,14 @@
+index.html
+  h_86b9cdc4199ddb 1-1364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0c04aa781b16d5097815ee029ef0497a331a3382",
+  "prompts": {},
+  "humans": {
+    "h_86b9cdc4199ddb": {
+      "author": "Aryn Silverberg <asilverberg@g2.com>"
+    }
+  }
+}
